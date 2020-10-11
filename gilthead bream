@@ -1,0 +1,97 @@
+# Import libraries
+import numpy as np
+
+
+def load_defaults():
+    print('Loading defaults...')
+    # Framework
+    days = 365 * 3 # One year
+    dt   = 0.01 # units: days    
+    
+    # Parameters
+    par = {}
+    par = ['alpha'] = -0.12 #temperature function parameter celsius^-1
+    par = ['beta'] = -0.15 #temperature function parameter celsius^-1
+    par = ['D'] = 4.93 #temperature adjustment parameter 
+    # EXAMPLE: par['mu'] = 1
+    
+    # Initial conditions
+    InitCond = {}
+    InitCond['E_i'] = 
+    
+    return  days, dt, par, InitCond
+    
+def run(days, dt, par, InitCond):
+    print('Running model...')
+   
+    
+    # Setup the framework 
+    NoSTEPS = int(days / dt) # Calculates the number of steps 
+    time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers 
+    
+    # Create arrays of zeros
+    # EXAMPLE: P = np.zeros((NoSTEPS), float)
+    E = np.zeros((NoSTEPS,),float)
+    E_i = np.zeros((NoSTEPS,),float)
+    E_f = np.zeros((NoSTEPS,),float)
+    E_b = np.zeros((NoSTEPS,),float)
+    E_s = np.zeros((NoSTEPS,),float)               
+   
+    # Initializing with initial conditions
+    # EXAMPLE: P[0] = InitCond['P']
+    E_i[0] = InitCond['E_i'] #energy from assimilated food (gramcal d^-1)
+    E_f[0] = InitCond['E_f'] #energy cost of feeding (gramcal d^-1)
+    E_b[0] = InitCond['E_b'] #energy cost of basal metabolism (gramcal d^-1)
+    E_s[0] = InitCond['E_s'] #energy cost of swimming (gramcal d^-1)
+    E[0] = InitCond['E_i'] - (InitCond['E_f'] + InitCond['E_b'] + InitCond['E_s']) #net energy balance 
+    # *****************************************************************************
+    # MAIN MODEL LOOP *************************************************************
+    for t in range(0,NoSTEPS-1):
+        # Estimate limiting functions
+      
+           
+        #Estimate processes
+        dEdt = 0 # TO DO Eq. 6
+         # Eq.1 Feeding and digestion 2.1 
+       ## f[theta] = D(exp(alpha(theta[m]-theta-exp(beta(theta[m]-theta))))
+        # Eq.2 Fish Stomach Capacity 
+        ## Sv = 3.587*((10**-8)*L**3.514)  
+        # Eq.4 Gastic Evacuation in Fish, no feeding
+        # Eq.5 Gut Content over time 
+        
+
+        
+        
+        #Estimate Time rate of change of all State Variables (dXdt) ----
+        #EXAMPLE: dPdt = 0
+        
+        # Update and step (time-stepping) ------------------------------
+        # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
+        E[t+1] = E_i[t+1] - (E_f[t+1]+E_b[t+1]+E_s[t+1])  
+    # end of main model LOOP*******************************************************
+    # *****************************************************************************
+
+    # Pack output into dictionary
+    output = {}
+    output['time'] = time
+
+    print('Model run: DONE!!!')
+    return  output
+
+def plot(output):
+    import matplotlib.pyplot as plt 
+    # Plotting                      
+    fig, (ax) = plt.subplots(1,1)   
+    plt.show()                      
+    return
+
+if __name__ == "__main__":
+    print('Executing my_module.py')
+    print('--------------------')
+    
+    days, dt, par, InitCond = load_defaults()
+    output = run(days, dt, par, InitCond)
+    plot(output)
+    
+    print('--------------------')
+    
