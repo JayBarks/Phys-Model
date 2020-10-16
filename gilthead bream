@@ -79,7 +79,7 @@ def run(days, dt, par, InitCond):
         #Estimate processes
         #dEdt = 0 # TO DO Eq. 6
         dScdt = (-par['γ']*InitCond['Sc']**0.5 #Eq.4 Gastic Evacuation in Fish, no feeding
-        dGcdt = ['dScdt'] - (par['ε']*par['Fr'])-(par['φ']*InitCond['Gc'])# Eq.5 Gastic Evacuation in Fish, feeding 
+**Syntax Error        dGcdt = dScdt - (par['ε']*par['Fr'])-(par['φ']*InitCond['Gc'])# Eq.5 Gastic Evacuation in Fish, feeding 
         
          # Eq.1 Feeding and digestion 2.1
         #f[θ] = D(e**(α(θ[m]−θ))−e**(β(θ[m]−θ)))
