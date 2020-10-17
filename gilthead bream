@@ -114,10 +114,7 @@ def run(days, dt, par, InitCond):
 
 def plot(output):
     import matplotlib.pyplot as plt 
-    # Plotting                      
-    def plot(output):
-    import matplotlib.pyplot as plt 
-    # Plotting                      
+    # Plotting                                    
     fig, (ax) = plt.subplots(1,1) 
     ax.plot(output['time']/10,output['Sc'],'b-')
     ax.plot(output['time']/10,output['Gc'],'r-')   
