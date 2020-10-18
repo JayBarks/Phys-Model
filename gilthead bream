@@ -6,7 +6,7 @@ Created on Fri Oct  9 22:34:16 2020
 """
 # Import libraries
 import numpy as np
-
+import math
 
 def load_defaults():
     print('Loading defaults...')
@@ -86,7 +86,7 @@ def run(days, dt, par, InitCond):
         # Eq.2 Fish Stomach Capacity 
         Sv = 3.587*((10**-8)*InitCond['L']**3.514)  
         #Gilthead length determined via Biomass  # Eq.3
-        #Log(W) = −2.1724+3.2216Log(L)
+        #Log(W) = −2.1724+3.2216Log(InitCond['L'])
        
         #Estimate Time rate of change of all State Variables (dXdt) ----
         #EXAMPLE: dPdt = 0
@@ -114,18 +114,28 @@ def run(days, dt, par, InitCond):
 
 def plot(output):
     import matplotlib.pyplot as plt 
-    # Plotting                                    
-    fig, (ax) = plt.subplots(1,1) 
-    ax.plot(output['time']/10,output['Sc'],'b-')
-    ax.plot(output['time']/10,output['Gc'],'r-')   
-    ax.legend(['Sc','Gc'])  
-    ax2=ax.twinx()
-    ax2.set_ylabel('Stomach Content DW g')   
+    # Plotting               
+    t = output['time']
+    data1 = output['time']/10,output['Sc']
+    data2 = output['time']/10,output['Gc']
+    
+    fig, ax1 = plt.subplots()
+    
+    color = 'tab:red'
+    ax1.set_xlabel('Days since start of culture')
+    ax1.set_ylabel('Stomach Content DW g', color = color)
+    ax1.plot(t, data1, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    
+    ax2=ax1.twinx()
+    
+    color = 'tab:blue'
     ax2.set_ylabel('Gut Content DW g')
-    ax.set_xlabel('Days since start of culture')
-    plt.show()                      
-    return
-                   
+    ax2.plot(t, data2, color=color)   
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    fig.tight_layout() 
+            
     return
 
 
@@ -139,3 +149,5 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
+    
+
