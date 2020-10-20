@@ -12,7 +12,7 @@ def load_defaults():
     print('Loading defaults...')
     # Framework
     days = 10 
-    dt   = 0.25 # units: days    
+    dt   = 0.25    
     
     # Parameters
     par = {}
@@ -77,20 +77,15 @@ def run(days, dt, par, InitCond):
       
            
         #Estimate processes
-        #dEdt = 0 # TO DO Eq. 6
+        
+        #temperature_effect = (par['D']*((math.exp((par['α'])*((par['θm']-InitCond['θ']))))-(math.exp((par['β'])*((par['θm'])-InitCond['θ'])))))  # Eq.1 Feeding and digestion 2.1
+        Sv = 3.587*((10**-8)*InitCond['L']**3.514) # Eq.2 Fish Stomach Capacity  
+        #Log(W) = −2.1724+3.2216Log(InitCond['L']) # Eq.3 Gilthead length determined via Biomass
         dScdt = (-par['γ']*(InitCond['Sc']**0.5))# Eq.4 Gastic Evacuation in Fish, no feeding      
-        dGcdt = dScdt-(par['ε']*par['Fr'])-(par['φ']*InitCond['Gc']) # Eq.5 Gastic Evacuation in Fish, feeding 
+        dGcdt = dScdt-(par['ε']*par['Fr'])-(par['φ']*InitCond['Gc']) # Eq.5 Gastic Evacuation in Fish, feeding
+        #dEdt = 0 # TO DO? Eq. 6
         
-         # Eq.1 Feeding and digestion 2.1 
-        # temperature_effect = (par['D']*((math.exp((par['α'])*((par['θm']-InitCond['θ']))))-(math.exp((par['β'])*((par['θm'])-InitCond['θ'])))))
-        # Eq.2 Fish Stomach Capacity 
-        Sv = 3.587*((10**-8)*InitCond['L']**3.514)  
-        #Gilthead length determined via Biomass  # Eq.3
-        #Log(W) = −2.1724+3.2216Log(InitCond['L'])
-       
-        #Estimate Time rate of change of all State Variables (dXdt) ----
-        #EXAMPLE: dPdt = 0
-        
+
         # Update and step (time-stepping) ------------------------------
         # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
         #E[t+1] = E_i[t+1] - (E_f[t+1]+E_b[t+1]+E_s[t+1])  
@@ -105,7 +100,7 @@ def run(days, dt, par, InitCond):
     output = {}
     output['time'] = time
     #ouput ['E'] = 
-    #output['θ'] = temperature 
+    #output['θ'] = temp
     output['Sc'] = Sc 
     output['Gc'] = Gc
     output['dScdt'] = dScdt
