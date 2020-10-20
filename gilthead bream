@@ -80,7 +80,7 @@ def run(days, dt, par, InitCond):
         
         #temperature_effect = (par['D']*((math.exp((par['α'])*((par['θm']-InitCond['θ']))))-(math.exp((par['β'])*((par['θm'])-InitCond['θ'])))))  # Eq.1 Feeding and digestion 2.1
         Sv = 3.587*((10**-8)*InitCond['L']**3.514) # Eq.2 Fish Stomach Capacity  
-        #Log(W) = −2.1724+3.2216Log(InitCond['L']) # Eq.3 Gilthead length determined via Biomass
+        #Log(W) = −2.1724+3.2216Log(InitCond['L']) # Eq.3 Gilthead length determined via Biomass  #### use 5g gilthead and solve for L (= 4.4mm)
         dScdt = (-par['γ']*(InitCond['Sc']**0.5))# Eq.4 Gastic Evacuation in Fish, no feeding      
         dGcdt = dScdt-(par['ε']*par['Fr'])-(par['φ']*InitCond['Gc']) # Eq.5 Gastic Evacuation in Fish, feeding
         #dEdt = 0 # TO DO? Eq. 6
