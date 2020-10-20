@@ -98,7 +98,7 @@ def run(days, dt, par, InitCond):
 
     # Pack output into dictionary
     output = {}
-    output['time'] = time
+    output['time'] = t
     #ouput ['E'] = 
     #output['θ'] = temp
     output['Sc'] = Sc 
