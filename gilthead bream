@@ -32,7 +32,7 @@ def load_defaults():
     #InitCond['E_f'] = 
     #InitCond['E_b'] = 
     #InitCond['E_s'] = 
-    InitCond['L'] = 290 # fish length mm 
+    InitCond['L'] = 4.4 # fish length mm 
     InitCond['θ'] = 20 # water temperature degrees celsius
     InitCond['Sc'] = 0.025 # volumetric stomach content 
     InitCond['Gc'] = 0 # gut content (DW food)
