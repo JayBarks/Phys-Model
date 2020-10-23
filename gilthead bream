@@ -1,139 +1,149 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct  9 22:34:16 2020
+Created on Thu Oct 22 13:23:49 2020
 
 @author: James-
 """
-# Import libraries
-import numpy as np
-import math
+import math 
 
 def load_defaults():
     print('Loading defaults...')
     # Framework
-    days = 10 
-    dt   = 0.25    
+    days = 365 * 3 # One year
+    dt   = 0.01 # units: days   
+   
     
     # Parameters
     par = {}
-    par['α'] = -0.12 # temperature function parameter celsius^-1
-    par['β'] = -0.15 # temperature function parameter celsius^-1
-    par['D'] = 4.93 # temperature adjustment parameter 
-    par['θm'] = 32.9 # maximum lethal temperature in degrees celsius
-    par['γ'] = 1.5 # proportionality constant
-    par['ε'] = 0.719 # assimilation effiency AE = (I-E)/I x 100 (no units)
-    par['φ'] = 0.338 # faecal elimination rate = faecal elimation/days (g DW d^-1)
-    par['Fr'] = 1.3 # feeding rate g DW d^-1
+    # EXAMPLE: par['mu'] = 1
+    # Parameters for Macrosystis
+    par['μ'] = 0.2 # max growth rate (d^-1)
+    par['VNH4'] = 8 # max uptake rate amm. (mg N g^-1 dw d^-1)
+    par['VNO3'] = 10.3 # max uptake rate nit. (mg N g^-1 dw d^-1)
+    par['KNH4'] = 74.2 # half saturation const. amm. (mg N m^-3)
+    par['KNO3'] = 182 # half saturation const. nit. (mg N m^-3)
+    par['Qmax'] = 25.0 # max internal nitrogen (mg N g^-1 dw)
+    par['Qmin'] = 7.0 # min internal nitrogen (mg N g^-1 dw)
+    par['Kc'] = 6.0 # half growth constant (mg N g^-1) 
+    par['To'] = 12 # optimal temp. (degrees celsius)
+    par['Tr'] = 1.0 # range of optimal temp (degrees celsius) 
+    par['Is'] = 134.0 # saturation irridiance (μmol photons m^-2 s^-1)
+    par['acs'] = 0.0001 # nitrogen specific shading (m^2 mg^-1 N)
+    par['dm'] = 0.003 # mortality rate (d^-1)
+    par['num_fronds'] = 7 # number of fronds  (dimensionless)
+    par['rL'] = 0.2 # remineralization rate (d^-1)
+    par['rN'] = 0.1 # nitrification rate 
+    par['λR'] = 0.25 # (d^-1) Fin/Vfarm effect of the flow rate on algae in abscence of an advection diffusion model. Aldridge and Trimmer, 2009.
+    par['Kd'] = 0.1 # Light attenuation coefficient (m^-1)
+    par['h'] = 0 
     
     
     # Initial conditions
     InitCond = {}
-    #InitCond['E_i'] = 
-    #InitCond['E_f'] = 
-    #InitCond['E_b'] = 
-    #InitCond['E_s'] = 
-    InitCond['L'] = 4.4 # fish length mm 
-    InitCond['θ'] = 20 # water temperature degrees celsius
-    InitCond['Sc'] = 0.025 # volumetric stomach content 
-    InitCond['Gc'] = 0 # gut content (DW food)
-    
+    # EXAMPLE: InitCond['P'] = 1
+    InitCond['Nfarm'] = 100 #(N m^-3 d^-1)
     
     return  days, dt, par, InitCond
     
-def run(days, dt, par, InitCond):
+def run(days, dt, par, InitCond,forc):
     print('Running model...')
-   
+    # Import libraries
+    import numpy as np
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
     time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers 
+    I = np.zeros((NoSTEPS,),float)
+    temp = np.zeros((NoSTEPS,),float)
+    nutrients = np.zeros((NoSTEPS,),float)
     
+    #Create the environment light/temperature/nutrients
+    #I = Iav + Isd * math.sin((2πt/365)+ts)
+    #temp= tempav + tempsd * math.sin((2πt/365)+ts)
+    #nutrients = nutrientsav + nutrientssd * math.sin((2πt/365)+ts)
+
     # Create arrays of zeros
     # EXAMPLE: P = np.zeros((NoSTEPS), float)
-    #E = np.zeros((NoSTEPS,),float)
-    #E_i = np.zeros((NoSTEPS,),float)
-    #E_f = np.zeros((NoSTEPS,),float)
-    #E_b = np.zeros((NoSTEPS,),float)
-    #E_s = np.zeros((NoSTEPS,),float) 
-    Sc = np.zeros((NoSTEPS,),float)  
-    Gc = np.zeros((NoSTEPS,),float)         
-    
-    
+    NH4 = np.zeros((NoSTEPS), float)
+    NO3 = np.zeros((NoSTEPS), float)
+    Ns = np.zeros((NoSTEPS), float)
+    Nf = np.zeros((NoSTEPS), float)
+    D = np.zeros((NoSTEPS), float)
     
     # Initializing with initial conditions
     # EXAMPLE: P[0] = InitCond['P']
-    #E_i[0] = InitCond['E_i'] #energy from assimilated food (gramcal d^-1)
-    #E_f[0] = InitCond['E_f'] #energy cost of feeding (gramcal d^-1)
-    #E_b[0] = InitCond['E_b'] #energy cost of basal metabolism (gramcal d^-1)
-    #E_s[0] = InitCond['E_s'] #energy cost of swimming (gramcal d^-1)
-    #E[0] = InitCond['E_i'] - ((InitCond['E_f'] + InitCond['E_b'] + InitCond['E_s'])) #net energy balance
-    Sc[0] = InitCond['Sc']
-    Gc[0] = InitCond['Gc']
+    NH4[0] = InitCond['NH4']
+    NO3[0] = InitCond['NO3']
+    Ns[0] = InitCond['Ns']
+    Nf[0] = InitCond['Nf']
+    D[0] = InitCond['D']
     
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
     for t in range(0,NoSTEPS-1):
         # Estimate limiting functions
-      
-           
+        
+        # General model behaviour
+        hma = (.00174*Nf/par['num_fronds'])**1.047
+        N = InitCond['Nfarm']*t*z # Daily accumulated N per unit area of macroalge farm input from salmon activity 
+        Nfixed = Nf * hma # Fixed N (mg N m^-2)
+        Nstored = Ns * hma # Stored N (mg N m^-2)
+        Ntotal = Nfixed + Nstored # Total N removed (mg N m^-2)
+        
+        # Biological Intermediate Processes 
+        Ez = math.exp(0)(math.exp(−K*z)) # irradiance at top of macroalgal canopy (μmol photons m^-2 s^-1)
+        K = par['Kd'] + Kma # extincition rate of light due to water and algae (m^-1)
+        Q = par['Qmin']*(1+(NsNf**-1)) # internal nutrient quota of macroalgae (mg N g^-1 dw)
+        B = Nf*par['Qmin']**-1 # biomass of dry macroalgae (g dw m**-3)
+        gE = (math.exp(1)/(K*(par['h']))) * ((math.exp((-Ez*(math.exp(-K*par['h']))))/Is)) - math.exp(-Ez/(par['Is'])) # growth limitation due to light 
+        gQ = (Q - (par['Qmin'])/(Q - (par['Kc']))) # growth limitation due to internal nutrient reserves  
+        gT = 1/(1+math.exp(-(temp-(par['To']))/par['Tr'])) # growth limitation due to temperature 
+        Kma = (Nf * par['acs']) * ((max(par['h']/z)) * (min(par['h']/z)**-1) # extinction rate of light due to algae (m^-1)
+        f('NH4') = (par['VNH4'] * InitCond['Nfarm'])/((K*(1/2)) + InitCond['Nfarm'])
+        f('NO3') = (par['VNO3'] * InitCond['Nfarm'])/((K*(1/2)) + InitCond['Nfarm'])                           
+        NQ = ((par['Qmax']) - Q)/(par['Qmax']) - par(['Qmin']))    
+                           
         #Estimate processes
+        dNH4dt = par['λR'] * (NH4ref-NH4) - f(NH4,NQ)*B(max(hma/z)) + InitCond['Nfarm'] + par['rL']*D-(par['rN'])NH4 #eq.3 (eq.1 rearranged)
+        dNO3dt = par['λR'] * (NO3ref-NO3) - f(NO3,NQ)*B(max(hma/z)) + (par['rN'])NH4 #eq.4 (eq. 2 rearranged)
         
-        #temperature_effect = (par['D']*((math.exp((par['α'])*((par['θm']-InitCond['θ']))))-(math.exp((par['β'])*((par['θm'])-InitCond['θ'])))))  # Eq.1 Feeding and digestion 2.1
-        Sv = 3.587*((10**-8)*InitCond['L']**3.514) # Eq.2 Fish Stomach Capacity  
-        #Log(W) = −2.1724+3.2216Log(InitCond['L']) # Eq.3 Gilthead length determined via Biomass  #### use 5g gilthead and solve for L (= 4.4mm)
-        dScdt = (-par['γ']*(InitCond['Sc']**0.5))# Eq.4 Gastic Evacuation in Fish, no feeding      
-        dGcdt = dScdt-(par['ε']*par['Fr'])-(par['φ']*InitCond['Gc']) # Eq.5 Gastic Evacuation in Fish, feeding
-        #dEdt = 0 # TO DO? Eq. 6
+        dNsdt = f(NXx,Q)*B(max(hma/z)-(par['μ'](gE,gQ,gT))*Ns-par['dm'] * Ns
+        dNfdt = par['μ'](gE,gQ,gT) * Ns - par['dm']*Nf
         
+        dDdt = par['λR'] (Dref-D) + (par['dm']*Nf-par['rl']*D)
 
+        #Estimate Time rate of change of all State Variables (dXdt) ----
+        #EXAMPLE: dPdt = 0
+        
         # Update and step (time-stepping) ------------------------------
         # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
-        #E[t+1] = E_i[t+1] - (E_f[t+1]+E_b[t+1]+E_s[t+1])  
+        NH4[t+1] = NH4[t] + (dNH4dt * dt)  
+        NO3[t+1] = NO3[t] + (dNO3dt * dt)
+        Ns[t+1] = Ns[t] + (dNsdt * dt)
+        Nf[t+1] = Nf[t] + (dNfdt * dt)
+        D[t+1] = D[t] + (dDdt * dt)
         
-        Sc[t+1] = Sc[t] + (dScdt * dt)
-        Gc[t+1] = Gc[t] + (dGcdt * dt) 
-    
     # end of main model LOOP*******************************************************
     # *****************************************************************************
 
     # Pack output into dictionary
     output = {}
-    output['time'] = t
-    #ouput ['E'] = 
-    #output['θ'] = temp
-    output['Sc'] = Sc 
-    output['Gc'] = Gc
-    output['dScdt'] = dScdt
+    output['time'] = time
+    output['NH4'] = NH4
+    output['NO3'] = NO3
+    output['Ns'] = Ns
+    output['Nf'] = Nf
+    output['D'] = D
+
     print('Model run: DONE!!!')
     return  output
 
 def plot(output):
     import matplotlib.pyplot as plt 
-    # Plotting               
-    t = output['time']
-    data1 = output['time']/10,output['Sc']
-    data2 = output['time']/10,output['Gc']
-    
-    fig, ax1 = plt.subplots()
-    
-    color = 'tab:red'
-    ax1.set_xlabel('Days since start of culture')
-    ax1.set_ylabel('Stomach Content DW g', color = color)
-    ax1.plot(t, data1, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-    
-    ax2=ax1.twinx()
-    
-    color = 'tab:blue'
-    ax2.set_ylabel('Gut Content DW g')
-    ax2.plot(t, data2, color=color)   
-    ax2.tick_params(axis='y', labelcolor=color)
-    
-    fig.tight_layout() 
-            
+    # Plotting                      
+    fig, (ax) = plt.subplots(1,1)   
+    plt.show()                      
     return
-
-
 
 if __name__ == "__main__":
     print('Executing my_module.py')
