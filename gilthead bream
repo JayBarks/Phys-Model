@@ -1,7 +1,9 @@
 
 @author: James-
 """
-
+@author: James-
+"""
+import numpy as np
 import math 
 
 def load_defaults():
@@ -11,10 +13,8 @@ def load_defaults():
     dt   = 0.01 # units: days   
    
     
-    # Parameters
-    par = {}
-    # EXAMPLE: par['mu'] = 1
     # Parameters for Macrosystis
+    par = {}
     par['μ'] = 0.2 # max growth rate (d^-1)
     par['VNH4'] = 8 # max uptake rate amm. (mg N g^-1 dw d^-1)
     par['VNO3'] = 10.3 # max uptake rate nit. (mg N g^-1 dw d^-1)
@@ -39,8 +39,9 @@ def load_defaults():
     par['I'] = 600 # median irradiance James 
     par['Vfarm'] = 10000 # volume of farm (m^3) James
     par['NH4ref'] = 1000000 #(N d^-1) James Nfarm*Vfarm
-    par['NO3ref'] = 30000
-    par['Dref'] = 0
+    par['NO3ref'] = 30000 # 3% of NHref James 
+    par['Dref'] = 0 
+    
     # Initial conditions
     InitCond = {}
     InitCond['Nfarm'] = 100 #(N m^-3 d^-1)
@@ -54,8 +55,6 @@ def load_defaults():
     
 def run(days, dt, par, InitCond):
     print('Running model...')
-    # Import libraries
-    import numpy as np
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
@@ -85,6 +84,7 @@ def run(days, dt, par, InitCond):
     # MAIN MODEL LOOP *************************************************************
     for t in range(0,NoSTEPS-1):
     # Estimate limiting functions
+        
      hma = ((0.00174 * Nf)/(par['num_fronds']))**1.047
      B = Nf/par['Qmin']   
      #N = InitCond['Nfarm']*t*(par['z'])# Daily accumulated N per unit area of macroalge farm input from salmon activity 
@@ -157,6 +157,3 @@ if __name__ == "__main__":
     
     print('--------------------')
     
-
-  
-
