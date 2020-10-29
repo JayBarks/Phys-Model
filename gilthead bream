@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 22 13:23:49 2020
 
 @author: James-
 """
+
 import math 
 
 def load_defaults():
@@ -35,17 +33,26 @@ def load_defaults():
     par['rN'] = 0.1 # nitrification rate 
     par['λR'] = 0.25 # (d^-1) Fin/Vfarm effect of the flow rate on algae in abscence of an advection diffusion model. Aldridge and Trimmer, 2009.
     par['Kd'] = 0.1 # light attenuation coefficient (m^-1)
-    par['h'] = 0 
+    par['h'] = 0 # not applicable to macrosystis
     par['z'] = 3 # cultivation depth (m)
-    
+    par['temp'] = 15 # temperature  (degrees celsius) James
+    par['I'] = 600 # median irradiance James 
+    par['Vfarm'] = 10000 # volume of farm (m^3) James
+    par['NH4ref'] = 1000000 #(N d^-1) James Nfarm*Vfarm
+    par['NO3ref'] = 30000
+    par['Dref'] = 0
     # Initial conditions
     InitCond = {}
-    # EXAMPLE: InitCond['P'] = 1
     InitCond['Nfarm'] = 100 #(N m^-3 d^-1)
+    InitCond['Ns'] = 7 # (mg N m^-3) minimal internal nitrogen storage
+    InitCond['Nf'] = 7 # (mg N m^-3) at time 0. nitrogen fixed is same as stored initially
+    InitCond['NH4'] = 0 #(N d^-1) James Nfarm*Vfarm
+    InitCond['NO3'] = 0 #(N d^-1) James NH*rN (nitrification rate)
+    InitCond['D'] = 0
     
     return  days, dt, par, InitCond
     
-def run(days, dt, par, InitCond,forc):
+def run(days, dt, par, InitCond):
     print('Running model...')
     # Import libraries
     import numpy as np
@@ -53,25 +60,21 @@ def run(days, dt, par, InitCond,forc):
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
     time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers 
-    I = np.zeros((NoSTEPS,),float)
-    temp = np.zeros((NoSTEPS,),float)
-    nutrients = np.zeros((NoSTEPS,),float)
     
-    #Create the environment light/temperature/nutrients
-    #I = Iav + Isd * math.sin((2πt/365)+ts)
-    #temp= tempav + tempsd * math.sin((2πt/365)+ts)
-    #nutrients = nutrientsav + nutrientssd * math.sin((2πt/365)+ts)
+    #Create the environment light/temperature/nutrients ...adjusted
+    Q = par['Qmin'] * (1 + (InitCond['Ns']) * (InitCond['Nf'] **-1))
+    
 
+    EQT = par['μ'] * par['I'] * par['temp'] * Q 
+    
     # Create arrays of zeros
-    # EXAMPLE: P = np.zeros((NoSTEPS), float)
-    NH4 = np.zeros((NoSTEPS), float)
-    NO3 = np.zeros((NoSTEPS), float)
-    Ns = np.zeros((NoSTEPS), float)
-    Nf = np.zeros((NoSTEPS), float)
-    D = np.zeros((NoSTEPS), float)
+    NH4 = np.zeros((NoSTEPS,),float)
+    NO3 = np.zeros((NoSTEPS,),float)
+    Ns = np.zeros((NoSTEPS,),float)
+    Nf = np.zeros((NoSTEPS,),float)
+    D = np.zeros((NoSTEPS,),float)
     
     # Initializing with initial conditions
-    # EXAMPLE: P[0] = InitCond['P']
     NH4[0] = InitCond['NH4']
     NO3[0] = InitCond['NO3']
     Ns[0] = InitCond['Ns']
@@ -81,56 +84,38 @@ def run(days, dt, par, InitCond,forc):
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
     for t in range(0,NoSTEPS-1):
-        # Estimate limiting functions
+    # Estimate limiting functions
+     hma = ((0.00174 * Nf)/(par['num_fronds']))**1.047
+     B = Nf/par['Qmin']   
+     #N = InitCond['Nfarm']*t*(par['z'])# Daily accumulated N per unit area of macroalge farm input from salmon activity 
+     fNH4 = NH4 /(par['KNH4'] + NH4)
+     fNO3 = NO3 /(par['KNO3'] + NO3)                    
+     NQ = ((par['Qmax']) - Q)/((par['Qmax']) - (par['Qmin']))   
+    
+     fNXQ = ((fNH4 * NQ)* B * (hma/par['z'])) + ((fNO3 * NQ)* B * (hma/par['z']))
+    
+    # State Functions 
+     dNH4dt = par['λR'] * (par['NH4ref']- NH4) - ((fNH4 * NQ)* B * (hma/par['z'])) + InitCond['Nfarm'] + par['rL']* D - (par['rN']) * NH4 #eq.3 (eq.1 rearranged)
+     dNO3dt = par['λR'] * (par['NO3ref']- NO3) - ((fNO3 * NQ)* B * (hma/par['z'])) + (par['rN']) * NH4 #eq.4 (eq. 2 rearranged)
         
-        # General model behaviour
-        hma = (.00174*Nf/par['num_fronds'])**1.047
-        N = InitCond['Nfarm']*t*(par['z'])# Daily accumulated N per unit area of macroalge farm input from salmon activity 
-        Nfixed = Nf * hma # Fixed N (mg N m^-2)
-        Nstored = Ns * hma # Stored N (mg N m^-2)
-        Ntotal = Nfixed + Nstored # Total N removed (mg N m^-2)
+     dNsdt = fNXQ - ((par['μ'] * EQT * Ns - par['dm'] * Ns)
+     dNfdt = (par['μ'] * EQT * Ns) - (par['dm'] * Nf)
         
-        # Biological Intermediate Processes 
-        #Ez = math.exp(0)(math.exp(−K*z)) # irradiance at top of macroalgal canopy (μmol photons m^-2 s^-1)
-        K = par['Kd'] + Kma # extincition rate of light due to water and algae (m^-1)
-        Q = par['Qmin']*(1+(NsNf**-1)) # internal nutrient quota of macroalgae (mg N g^-1 dw)
-        B = Nf*par['Qmin']**-1 # biomass of dry macroalgae (g dw m**-3)
-        gE = (math.exp(1)/(K*(par['h']))) * ((math.exp((-Ez*(math.exp(-K*par['h']))))/Is)) - math.exp(-Ez/(par['Is'])) # growth limitation due to light 
-        gQ = (Q - (par['Qmin'])/(Q - (par['Kc']))) # growth limitation due to internal nutrient reserves  
-        gT = 1/(1+math.exp(-(temp-(par['To']))/par['Tr'])) # growth limitation due to temperature 
-        Kma = (Nf * par['acs']) * ((max(par['h']/z)) * (min(par['h']/z)**-1) # extinction rate of light due to algae (m^-1)
+     #dDdt = par['λR'] (Dref-D) + (par['dm']*Nf-par['rl']*D)  
+
+    # Update and step (time-stepping) ------------------------------
+    # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
+    NH4[t+1] = NH4[t] + (dNH4dt * dt)  
+    NO3[t+1] = NO3[t] + (dNO3dt * dt)
+    Ns[t+1] = Ns[t] + (dNsdt * dt)
+    Nf[t+1] = Nf[t] + (dNfdt * dt)
+    #D[t+1] = D[t] + (dDdt * dt)
        
-        fNH4 = (par['VNH4'] * InitCond['Nfarm'])/((K*(1/2)) + InitCond['Nfarm'])
-        fNO3 = (par['VNO3'] * InitCond['Nfarm'])/((K*(1/2)) + InitCond['Nfarm'])                           
-        NQ = ((par['Qmax']) - Q)/(par['Qmax']) - par(['Qmin']))    
-        
-        InitCond['Ns'] = fNH4 * fNO3 * NQ   
-        InitCond['Nf'] = 0 # TO DO 
-
-                
-        #Estimate processes
-        dNH4dt = par['λR'] * (NH4ref-NH4) - f(NH4,NQ)*B(max(hma/z)) + InitCond['Nfarm'] + par['rL']*D-(par['rN'])NH4 #eq.3 (eq.1 rearranged)
-        dNO3dt = par['λR'] * (NO3ref-NO3) - f(NO3,NQ)*B(max(hma/z)) + (par['rN'])NH4 #eq.4 (eq. 2 rearranged)
-        
-        dNsdt = f(NXx,Q)*B(max(hma/z)-(par['μ'](gE,gQ,gT))*Ns-par['dm'] * Ns
-        dNfdt = par['μ'](gE,gQ,gT) * Ns - par['dm']*Nf
-        
-        dDdt = par['λR'] (Dref-D) + (par['dm']*Nf-par['rl']*D)
-
-        #Estimate Time rate of change of all State Variables (dXdt) ----
-        #EXAMPLE: dPdt = 0
-        
-        # Update and step (time-stepping) ------------------------------
-        # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
-        NH4[t+1] = NH4[t] + (dNH4dt * dt)  
-        NO3[t+1] = NO3[t] + (dNO3dt * dt)
-        Ns[t+1] = Ns[t] + (dNsdt * dt)
-        Nf[t+1] = Nf[t] + (dNfdt * dt)
-        D[t+1] = D[t] + (dDdt * dt)
-        
+     
+    Ntotal = Nf + Ns # Total N removed (mg N m^-2)
     # end of main model LOOP*******************************************************
     # *****************************************************************************
-
+    
     # Pack output into dictionary
     output = {}
     output['time'] = time
@@ -138,7 +123,10 @@ def run(days, dt, par, InitCond,forc):
     output['NO3'] = NO3
     output['Ns'] = Ns
     output['Nf'] = Nf
-    output['D'] = D
+    output['dNsdt'] = dNsdt
+    output['dNfdt'] = dNfdt
+    output['Ntotal'] = Ntotal
+    #output['D'] = D
 
     print('Model run: DONE!!!')
     return  output
@@ -146,6 +134,15 @@ def run(days, dt, par, InitCond,forc):
 def plot(output):
     import matplotlib.pyplot as plt 
     # Plotting                      
+    fig1, ax1 = plt.subplots(1,1,figsize=(15, 4))
+    ax1.plot(output['time']/365,output['time'],'r-')
+    ax1.plot(output['time']/365,output['Ntotal'],'g-')
+    ax1.set_xlabel('Time (years)')
+    ax1.set_ylabel('N total')
+    ax1.set_title('M.pyrifera')
+    plt.show()
+    
+    
     fig, (ax) = plt.subplots(1,1)   
     plt.show()                      
     return
@@ -159,6 +156,7 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
-   
+    
 
+  
 
