@@ -6,8 +6,8 @@ import numpy as np
 def load_defaults():
     print('Loading defaults...')
     # Framework
-    days = 365 * 3 # One year
-    dt   = 0.01 # units: days   
+    days = 365 # One year
+    dt   = 1 # units: days   
    
     
     # Parameters for Macrosystis
@@ -48,6 +48,7 @@ def load_defaults():
     InitCond['NO3'] = 0 #(N d^-1) James NH*rN (nitrification rate)
     InitCond['D'] = 0
     
+    
     return  days, dt, par, InitCond
     
 def run(days, dt, par, InitCond):
@@ -68,12 +69,14 @@ def run(days, dt, par, InitCond):
     Nf = np.zeros((NoSTEPS,),float)
     D = np.zeros((NoSTEPS,),float)
     
+    
     # Initializing with initial conditions
     NH4[0] = InitCond['NH4']
     NO3[0] = InitCond['NO3']
     Ns[0] = InitCond['Ns']
     Nf[0] = InitCond['Nf']
     D[0] = InitCond['D']
+    
     
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
@@ -95,7 +98,8 @@ def run(days, dt, par, InitCond):
         
      dNsdt = fNXQ - (par['μ'] * EQT * Ns[t] - par['dm'] * Ns[t])      
      dNfdt = (par['μ'] * EQT * Ns[t]) - (par['dm'] * Nf[t])
-        
+     
+     Ntotal = Nf[t] + Ns[t]
      #dDdt = par['λR'] (Dref-D) + (par['dm']*Nf-par['rl']*D)  
 
     # Update and step (time-stepping) ------------------------------
@@ -105,8 +109,8 @@ def run(days, dt, par, InitCond):
     Nf[t+1] = Nf[t] + (dNfdt * dt)
     #D[t+1] = D[t] + (dDdt * dt)
        
-     
-    Ntotal = Nf + Ns # Total N removed (mg N m^-2)
+    
+    Ntotal[t+1] = Nf[t+1] + Ns[t+1] # Total N removed (mg N m^-2)
     # end of main model LOOP*******************************************************
     # *****************************************************************************
     
@@ -127,7 +131,7 @@ def run(days, dt, par, InitCond):
 def plot(output):
     import matplotlib.pyplot as plt 
     # Plotting                      
-    fig1, ax1 = plt.subplots(1,1,figsize=(15, 4))
+    fig1, ax1 = plt.subplots(1,1)
     ax1.plot(output['time']/365,output['Ntotal'],'g-')
     ax1.set_xlabel('Time (years)')
     ax1.set_ylabel('N total')
@@ -146,6 +150,7 @@ if __name__ == "__main__":
     
     print('--------------------')
     
+
 
   
     
