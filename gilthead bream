@@ -1,10 +1,7 @@
 
 @author: James-
 """
-@author: James-
-"""
 import numpy as np
-import math 
 
 def load_defaults():
     print('Loading defaults...')
@@ -62,8 +59,6 @@ def run(days, dt, par, InitCond):
     
     #Create the environment light/temperature/nutrients ...adjusted
     Q = par['Qmin'] * (1 + (InitCond['Ns']) * (InitCond['Nf'] **-1))
-    
-
     EQT = par['μ'] * par['I'] * par['temp'] * Q 
     
     # Create arrays of zeros
@@ -84,27 +79,26 @@ def run(days, dt, par, InitCond):
     # MAIN MODEL LOOP *************************************************************
     for t in range(0,NoSTEPS-1):
     # Estimate limiting functions
-        
-     hma = ((0.00174 * Nf)/(par['num_fronds']))**1.047
-     B = Nf/par['Qmin']   
+     
+     hma = ((0.00174 * Nf[t])/(par['num_fronds']))**1.047
+     B = Nf[t]/par['Qmin']   
      #N = InitCond['Nfarm']*t*(par['z'])# Daily accumulated N per unit area of macroalge farm input from salmon activity 
-     fNH4 = NH4 /(par['KNH4'] + NH4)
-     fNO3 = NO3 /(par['KNO3'] + NO3)                    
+     fNH4 = NH4[t] /(par['KNH4'] + NH4[t])
+     fNO3 = NO3[t] /(par['KNO3'] + NO3[t])                    
      NQ = ((par['Qmax']) - Q)/((par['Qmax']) - (par['Qmin']))   
     
      fNXQ = ((fNH4 * NQ)* B * (hma/par['z'])) + ((fNO3 * NQ)* B * (hma/par['z']))
     
     # State Functions 
-     dNH4dt = par['λR'] * (par['NH4ref']- NH4) - ((fNH4 * NQ)* B * (hma/par['z'])) + InitCond['Nfarm'] + par['rL']* D - (par['rN']) * NH4 #eq.3 (eq.1 rearranged)
-     dNO3dt = par['λR'] * (par['NO3ref']- NO3) - ((fNO3 * NQ)* B * (hma/par['z'])) + (par['rN']) * NH4 #eq.4 (eq. 2 rearranged)
+     dNH4dt = par['λR'] * (par['NH4ref']- NH4[t]) - ((fNH4 * NQ)* B * (hma/par['z'])) + InitCond['Nfarm'] + par['rL']* D[t] - (par['rN']) * NH4[t] #eq.3 (eq.1 rearranged)
+     dNO3dt = par['λR'] * (par['NO3ref']- NO3[t]) - ((fNO3 * NQ)* B * (hma/par['z'])) + (par['rN']) * NH4[t] #eq.4 (eq. 2 rearranged)
         
-     dNsdt = fNXQ - ((par['μ'] * EQT * Ns - par['dm'] * Ns)
-     dNfdt = (par['μ'] * EQT * Ns) - (par['dm'] * Nf)
+     dNsdt = fNXQ - (par['μ'] * EQT * Ns[t] - par['dm'] * Ns[t])      
+     dNfdt = (par['μ'] * EQT * Ns[t]) - (par['dm'] * Nf[t])
         
      #dDdt = par['λR'] (Dref-D) + (par['dm']*Nf-par['rl']*D)  
 
     # Update and step (time-stepping) ------------------------------
-    # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
     NH4[t+1] = NH4[t] + (dNH4dt * dt)  
     NO3[t+1] = NO3[t] + (dNO3dt * dt)
     Ns[t+1] = Ns[t] + (dNsdt * dt)
@@ -126,7 +120,6 @@ def run(days, dt, par, InitCond):
     output['dNsdt'] = dNsdt
     output['dNfdt'] = dNfdt
     output['Ntotal'] = Ntotal
-    #output['D'] = D
 
     print('Model run: DONE!!!')
     return  output
@@ -135,16 +128,12 @@ def plot(output):
     import matplotlib.pyplot as plt 
     # Plotting                      
     fig1, ax1 = plt.subplots(1,1,figsize=(15, 4))
-    ax1.plot(output['time']/365,output['time'],'r-')
     ax1.plot(output['time']/365,output['Ntotal'],'g-')
     ax1.set_xlabel('Time (years)')
     ax1.set_ylabel('N total')
     ax1.set_title('M.pyrifera')
     plt.show()
-    
-    
-    fig, (ax) = plt.subplots(1,1)   
-    plt.show()                      
+                         
     return
 
 if __name__ == "__main__":
@@ -156,4 +145,7 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
+    
+
+  
     
