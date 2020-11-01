@@ -1,6 +1,11 @@
 
+
 @author: James-
 """
+
+### NO MORE TYPE ERROR. It runs, working on fixing values and outputs for a better plot. 
+
+
 import numpy as np
 
 def load_defaults():
@@ -42,10 +47,10 @@ def load_defaults():
     # Initial conditions
     InitCond = {}
     InitCond['Nfarm'] = 100 #(N m^-3 d^-1)
-    InitCond['Ns'] = 7 # (mg N m^-3) minimal internal nitrogen storage
-    InitCond['Nf'] = 7 # (mg N m^-3) at time 0. nitrogen fixed is same as stored initially
-    InitCond['NH4'] = 0 #(N d^-1) James Nfarm*Vfarm
-    InitCond['NO3'] = 0 #(N d^-1) James NH*rN (nitrification rate)
+    InitCond['Ns'] = 10 # (mg N m^-3) minimal internal nitrogen storage
+    InitCond['Nf'] = 10 # (mg N m^-3) at time 0. nitrogen fixed is same as stored initially
+    InitCond['NH4'] = 5 #(N d^-1) James Nfarm*Vfarm
+    InitCond['NO3'] = 5 #(N d^-1) James NH*rN (nitrification rate)
     InitCond['D'] = 0
     InitCond['Ntotal'] = 14
     
@@ -99,7 +104,7 @@ def run(days, dt, par, InitCond):
      dNsdt = fNXQ - (par['μ'] * EQT * Ns[t] - par['dm'] * Ns[t])      
      dNfdt = (par['μ'] * EQT * Ns[t]) - (par['dm'] * Nf[t])
      
-     Ntotal = Nf[t] + Ns[t]
+     
      #dDdt = par['λR'] (par['Dref']-D[t]) + (par['dm']*Nf[t]-par['rl']*D[t])  
 
     # Update and step (time-stepping) ------------------------------
@@ -110,7 +115,7 @@ def run(days, dt, par, InitCond):
     #D[t+1] = D[t] + (dDdt * dt)
        
     
-    Ntotal[t+1] = Nf[t+1] + Ns[t+1] # Total N removed (mg N m^-2)
+    Ntotal[t+1] = Nf[t] + Ns[t] # Total N removed (mg N m^-2)
     # end of main model LOOP*******************************************************
     # *****************************************************************************
     
@@ -149,11 +154,4 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
-    
-
-  
-
-
-
-  
     
