@@ -47,7 +47,7 @@ def load_defaults():
     InitCond['NH4'] = 0 #(N d^-1) James Nfarm*Vfarm
     InitCond['NO3'] = 0 #(N d^-1) James NH*rN (nitrification rate)
     InitCond['D'] = 0
-    
+    InitCond['Ntotal'] = 14
     
     return  days, dt, par, InitCond
     
@@ -68,7 +68,7 @@ def run(days, dt, par, InitCond):
     Ns = np.zeros((NoSTEPS,),float)
     Nf = np.zeros((NoSTEPS,),float)
     D = np.zeros((NoSTEPS,),float)
-    
+    Ntotal = np.zeros((NoSTEPS,),float)
     
     # Initializing with initial conditions
     NH4[0] = InitCond['NH4']
@@ -76,7 +76,7 @@ def run(days, dt, par, InitCond):
     Ns[0] = InitCond['Ns']
     Nf[0] = InitCond['Nf']
     D[0] = InitCond['D']
-    
+    Ntotal[0] = InitCond['Ntotal']
     
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
@@ -100,7 +100,7 @@ def run(days, dt, par, InitCond):
      dNfdt = (par['μ'] * EQT * Ns[t]) - (par['dm'] * Nf[t])
      
      Ntotal = Nf[t] + Ns[t]
-     #dDdt = par['λR'] (Dref-D) + (par['dm']*Nf-par['rl']*D)  
+     #dDdt = par['λR'] (par['Dref']-D[t]) + (par['dm']*Nf[t]-par['rl']*D[t])  
 
     # Update and step (time-stepping) ------------------------------
     NH4[t+1] = NH4[t] + (dNH4dt * dt)  
@@ -150,6 +150,9 @@ if __name__ == "__main__":
     
     print('--------------------')
     
+
+  
+
 
 
   
