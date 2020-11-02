@@ -3,7 +3,12 @@
 @author: James-
 """
 
-### NO MORE TYPE ERROR. It runs, working on fixing values and outputs for a better plot. 
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct 27 23:45:50 2020
+
+@author: James-
+"""
 
 
 import numpy as np
@@ -113,7 +118,7 @@ def run(days, dt, par, InitCond):
     Ns[t+1] = Ns[t] + (dNsdt * dt)
     Nf[t+1] = Nf[t] + (dNfdt * dt)
     #D[t+1] = D[t] + (dDdt * dt)
-       
+    
     
     Ntotal[t+1] = Nf[t] + Ns[t] # Total N removed (mg N m^-2)
     # end of main model LOOP*******************************************************
@@ -129,7 +134,8 @@ def run(days, dt, par, InitCond):
     output['dNsdt'] = dNsdt
     output['dNfdt'] = dNfdt
     output['Ntotal'] = Ntotal
-
+    
+   
     print('Model run: DONE!!!')
     return  output
 
@@ -154,4 +160,5 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
+    
     
