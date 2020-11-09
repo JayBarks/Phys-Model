@@ -113,7 +113,6 @@ def plot(output):
     # Plotting                      
     fig, (ax) = plt.subplots(1,1)
     ax.plot(output['time'],output['L'],'b-')
-    #ax.legend(['B', 'Soma', 'Gonad']) 
     ax.set_ylabel('Larval length (um)') 
     ax.set_xlabel('Age since fertilization (d)') 
     plt.show()                      
