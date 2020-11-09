@@ -59,7 +59,7 @@ def run(days, dt, par, InitCond):
         
         #V = par['ðm']* (L**3)
         
-        jx = par['f'] * par['jxm'] ## Altered Eq from Manual 
+        jx = par['f'] * par['jxm'] * (V**(2/3)) ## Altered Eq from Manual 
         
         Pa = 0 #par['ae'] * par['ux'] * jx
         Pc = 0
