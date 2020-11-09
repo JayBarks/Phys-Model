@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Nov  9 08:14:04 2020
 
 @author: James-
@@ -51,14 +53,15 @@ def run(days, dt, par, InitCond):
     E =  np.zeros((NoSTEPS), float)
     Ev = np.zeros((NoSTEPS), float)
     Er = np.zeros((NoSTEPS), float)
-   
+    temp = np.zeros((NoSTEPS), float)
+    
     # Initializing with initial conditions
     # EXAMPLE: P[0] = InitCond['P']
     E[0] = InitCond['E']
     Ev[0] = InitCond['Ev']
     Er[0] = InitCond['Er']
+    temp[0] = InitCond['temp']
     
-    Temp = np.ones((NoSTEPS,),float) * InitCond['temp'] #Temperature 
     
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
@@ -67,7 +70,7 @@ def run(days, dt, par, InitCond):
         
     #Estimate processes
         
-        L = ((Ev[t]/par['Eg'])**(1/3))/par['ðm']
+        L = ((Ev/par['Eg'])**(1/3))/par['ðm']
         
         V = par['ðm']* (L**3)
         
@@ -84,15 +87,15 @@ def run(days, dt, par, InitCond):
         
         
         #With respect to Temperature 
-        dEdtt = dEdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp)) 
-        dEvdtt = dEvdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp))
-        dErdtt = dErdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp))
+        #dEdtt = dEdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp)) 
+        #dEvdtt = dEvdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp))
+        #dErdtt = dErdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp))
         
         
         # Update and step (time-stepping) ------------------------------
-        E[t+1] = E[t] + (dEdtt * dt)
-        Ev[t+1] = Ev[t] + (dEvdtt * dt)       
-        Er[t+1] = Er[t] + (dErdtt * dt)
+        E[t+1] = E[t] + (dEdt * dt) 
+        Ev[t+1] = Ev[t] + (dEvdt * dt)      
+        Er[t+1] = Er[t] + (dErdt * dt)
        
     # end of main model LOOP*******************************************************
     # *****************************************************************************
@@ -111,7 +114,7 @@ def run(days, dt, par, InitCond):
 def plot(output):
     import matplotlib.pyplot as plt 
     # Plotting                      
-    fig, (ax) = plt.subplots(1,1)
+    fig,(ax) = plt.subplots(1,1)
     ax.plot(output['time'],output['L'],'b-')
     ax.set_ylabel('Larval length (um)') 
     ax.set_xlabel('Age since fertilization (d)') 
@@ -127,6 +130,5 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
-    
     
    
