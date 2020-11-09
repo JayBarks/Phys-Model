@@ -1,304 +1,4 @@
 
-
-@author: James-
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 27 23:45:50 2020
-
-@author: James-
-"""
-
-
-import numpy as np
-
-def load_defaults():
-    print('Loading defaults...')
-    # Framework
-    days = 365 # One year
-    dt   = 1 # units: days   
-   
-    
-    # Parameters for Macrosystis
-    par = {}
-    par['μ'] = 0.2 # max growth rate (d^-1)
-    par['VNH4'] = 8 # max uptake rate amm. (mg N g^-1 dw d^-1)
-    par['VNO3'] = 10.3 # max uptake rate nit. (mg N g^-1 dw d^-1)
-    par['KNH4'] = 74.2 # half saturation const. amm. (mg N m^-3)
-    par['KNO3'] = 182 # half saturation const. nit. (mg N m^-3)
-    par['Qmax'] = 25.0 # max internal nitrogen (mg N g^-1 dw)
-    par['Qmin'] = 7.0 # min internal nitrogen (mg N g^-1 dw)
-    par['Kc'] = 6.0 # half growth constant (mg N g^-1) 
-    par['To'] = 12 # optimal temp. (degrees celsius)
-    par['Tr'] = 1.0 # range of optimal temp (degrees celsius) 
-    par['Is'] = 134.0 # saturation irridiance (μmol photons m^-2 s^-1)
-    par['acs'] = 0.0001 # nitrogen specific shading (m^2 mg^-1 N)
-    par['dm'] = 0.003 # mortality rate (d^-1)
-    par['num_fronds'] = 7 # number of fronds  (dimensionless)
-    par['rL'] = 0.2 # remineralization rate (d^-1)
-    par['rN'] = 0.1 # nitrification rate 
-    par['λR'] = 0.25 # (d^-1) Fin/Vfarm effect of the flow rate on algae in abscence of an advection diffusion model. Aldridge and Trimmer, 2009.
-    par['Kd'] = 0.1 # light attenuation coefficient (m^-1)
-    par['h'] = 0 # not applicable to macrosystis
-    par['z'] = 3 # cultivation depth (m)
-    par['temp'] = 15 # temperature  (degrees celsius) James
-    par['I'] = 600 # median irradiance James 
-    par['Vfarm'] = 10000 # volume of farm (m^3) James
-    par['NH4ref'] = 1000000 #(N d^-1) James Nfarm*Vfarm
-    par['NO3ref'] = 30000 # 3% of NHref James 
-    par['Dref'] = 0 
-    
-    # Initial conditions
-    InitCond = {}
-    InitCond['Nfarm'] = 100 #(N m^-3 d^-1)
-    InitCond['Ns'] = 10 # (mg N m^-3) minimal internal nitrogen storage
-    InitCond['Nf'] = 10 # (mg N m^-3) at time 0. nitrogen fixed is same as stored initially
-    InitCond['NH4'] = 5 #(N d^-1) James Nfarm*Vfarm
-    InitCond['NO3'] = 5 #(N d^-1) James NH*rN (nitrification rate)
-    InitCond['D'] = 0
-    InitCond['Ntotal'] = 14
-    
-    return  days, dt, par, InitCond
-    
-def run(days, dt, par, InitCond):
-    print('Running model...')
-    
-    # Setup the framework 
-    NoSTEPS = int(days / dt) # Calculates the number of steps 
-    time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers 
-    
-    #Create the environment light/temperature/nutrients ...adjusted
-    Q = par['Qmin'] * (1 + (InitCond['Ns']) * (InitCond['Nf'] **-1))
-    EQT = par['μ'] * par['I'] * par['temp'] * Q 
-    
-    # Create arrays of zeros
-    NH4 = np.zeros((NoSTEPS,),float)
-    NO3 = np.zeros((NoSTEPS,),float)
-    Ns = np.zeros((NoSTEPS,),float)
-    Nf = np.zeros((NoSTEPS,),float)
-    D = np.zeros((NoSTEPS,),float)
-    Ntotal = np.zeros((NoSTEPS,),float)
-    
-    # Initializing with initial conditions
-    NH4[0] = InitCond['NH4']
-    NO3[0] = InitCond['NO3']
-    Ns[0] = InitCond['Ns']
-    Nf[0] = InitCond['Nf']
-    D[0] = InitCond['D']
-    Ntotal[0] = InitCond['Ntotal']
-    
-    # *****************************************************************************
-    # MAIN MODEL LOOP *************************************************************
-    for t in range(0,NoSTEPS-1):
-    # Estimate limiting functions
-     
-     hma = ((0.00174 * Nf[t])/(par['num_fronds']))**1.047
-     B = Nf[t]/par['Qmin']   
-     #N = InitCond['Nfarm']*t*(par['z'])# Daily accumulated N per unit area of macroalge farm input from salmon activity 
-     fNH4 = NH4[t] /(par['KNH4'] + NH4[t])
-     fNO3 = NO3[t] /(par['KNO3'] + NO3[t])                    
-     NQ = ((par['Qmax']) - Q)/((par['Qmax']) - (par['Qmin']))   
-    
-     fNXQ = ((fNH4 * NQ)* B * (hma/par['z'])) + ((fNO3 * NQ)* B * (hma/par['z']))
-    
-    # State Functions 
-     dNH4dt = par['λR'] * (par['NH4ref']- NH4[t]) - ((fNH4 * NQ)* B * (hma/par['z'])) + InitCond['Nfarm'] + par['rL']* D[t] - (par['rN']) * NH4[t] #eq.3 (eq.1 rearranged)
-     dNO3dt = par['λR'] * (par['NO3ref']- NO3[t]) - ((fNO3 * NQ)* B * (hma/par['z'])) + (par['rN']) * NH4[t] #eq.4 (eq. 2 rearranged)
-        
-     dNsdt = fNXQ - (par['μ'] * EQT * Ns[t] - par['dm'] * Ns[t])      
-     dNfdt = (par['μ'] * EQT * Ns[t]) - (par['dm'] * Nf[t])
-     
-     
-     #dDdt = par['λR'] (par['Dref']-D[t]) + (par['dm']*Nf[t]-par['rl']*D[t])  
-
-    # Update and step (time-stepping) ------------------------------
-    NH4[t+1] = NH4[t] + (dNH4dt * dt)  
-    NO3[t+1] = NO3[t] + (dNO3dt * dt)
-    Ns[t+1] = Ns[t] + (dNsdt * dt)
-    Nf[t+1] = Nf[t] + (dNfdt * dt)
-    #D[t+1] = D[t] + (dDdt * dt)
-    
-    
-    Ntotal[t+1] = Nf[t] + Ns[t] # Total N removed (mg N m^-2)
-    # end of main model LOOP*******************************************************
-    # *****************************************************************************
-    
-    # Pack output into dictionary
-    output = {}
-    output['time'] = time
-    output['NH4'] = NH4
-    output['NO3'] = NO3
-    output['Ns'] = Ns
-    output['Nf'] = Nf
-    output['dNsdt'] = dNsdt
-    output['dNfdt'] = dNfdt
-    output['Ntotal'] = Ntotal
-    
-   
-    print('Model run: DONE!!!')
-    return  output
-
-def plot(output):
-    import matplotlib.pyplot as plt 
-    # Plotting                      
-    fig1, ax1 = plt.subplots(1,1)
-    ax1.plot(output['time']/365,output['Ntotal'],'g-')
-    ax1.set_xlabel('Time (years)')
-    ax1.set_ylabel('N total')
-    ax1.set_title('M.pyrifera')
-    plt.show()
-                         
-    return
-
-if __name__ == "__main__":
-    print('Executing my_module.py')
-    print('--------------------')
-    
-    days, dt, par, InitCond = load_defaults()
-    output = run(days, dt, par, InitCond)
-    plot(output)
-    
-    print('--------------------')
-    
-    
-    
-    #############################
-    
-    # Import libraries
-import numpy as np
-import math
-
-def load_defaults():
-    print('Loading defaults...')
-    # Framework
-    days = 10
-    dt   = 0.5    
-   
-    # Parameters
-    par = {}
-    par['α'] = -0.12 # temperature function parameter celsius^-1
-    par['β'] = -0.15 # temperature function parameter celsius^-1
-    par['D'] = 4.93 # temperature adjustment parameter
-    par['θm'] = 32.9 # maximum lethal temperature in degrees celsius
-    par['γ'] = 1.5 # proportionality constant
-    par['ε'] = 0.719 # assimilation effiency AE = (I-E)/I x 100 (no units)
-    par['φ'] = 0.338 # faecal elimination rate = faecal elimation/days (g DW d^-1)
-    par['Fr'] = 1.3 # feeding rate g DW d^-1
-    par['gr'] = 0.845 # 350/414 to establish avg rate of growth 
-    
-    # Initial conditions
-    InitCond = {}
-    InitCond['L'] = 100 # fish length mm
-    InitCond['θ'] = 20 # water temperature degrees celsius
-    InitCond['Sc'] = 0.025 # volumetric stomach content
-    InitCond['Gc'] = 0 # gut content (DW food)
-    
-   
-    return  days, dt, par, InitCond
-   
-def run(days, dt, par, InitCond):
-    print('Running model...')
-   
-   
-    # Setup the framework
-    NoSTEPS = int(days / dt) # Calculates the number of steps
-    time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers
-   
-    # Create arrays of zeros
-    Sc = np.zeros((NoSTEPS,),float)  
-    Gc = np.zeros((NoSTEPS,),float)        
-    
-   
-   
-    # Initializing with initial conditions
-    # EXAMPLE: P[0] = InitCond['P']
-    #E_i[0] = InitCond['E_i'] #energy from assimilated food (gramcal d^-1)
-    #E_f[0] = InitCond['E_f'] #energy cost of feeding (gramcal d^-1)
-    #E_b[0] = InitCond['E_b'] #energy cost of basal metabolism (gramcal d^-1)
-    #E_s[0] = InitCond['E_s'] #energy cost of swimming (gramcal d^-1)
-    #E[0] = InitCond['E_i'] - ((InitCond['E_f'] + InitCond['E_b'] + InitCond['E_s'])) #net energy balance
-    Sc[0] = InitCond['Sc']
-    Gc[0] = InitCond['Gc']
-    
-   
-    # *****************************************************************************
-    # MAIN MODEL LOOP *************************************************************
-    for t in range(0,NoSTEPS-1):
-        # Estimate limiting functions
-        
-           
-        #Estimate processes
-       
-        temp_effect = (par['D']*((math.exp((par['α'])*((par['θm']-InitCond['θ']))))-(math.exp((par['β'])*((par['θm'])-InitCond['θ'])))))  # Eq.1 Feeding and digestion 2.1
-        Sv = 3.587*((10**-8)*InitCond['L']**3.514) # Eq.2 Fish Stomach Capacity  
-        #Log(W) = −2.1724+3.2216Log(InitCond['L']) # Eq.3 Gilthead length determined via Biomass  #### use 5g gilthead and solve for L (= 4.4mm)
-        dScdt = (-par['γ']*(InitCond['Sc']**0.5))# Eq.4 Gastic Evacuation in Fish, no feeding      
-        dGcdt = dScdt-(par['ε']*par['Fr'])-(par['φ']*InitCond['Gc']) # Eq.5 Gastic Evacuation in Fish, feeding
-        dWdt = par['gr']*temp_effect*0.7 #0.7 is ration for fish appetite with 0 being starving 1 being max. Hernandez (finish cite)
-        
-        #dEdt = 0 # TO DO? Eq. 6
-       
-
-        # Update and step (time-stepping) ------------------------------
-       
-        Sc[t+1] = Sc[t] + (dScdt * dt)  
-        Gc[t+1] = Gc[t] + (dGcdt * dt)
-        
-       
-   
-    # end of main model LOOP*******************************************************
-    # *****************************************************************************
-
-    # Pack output into dictionary
-    output = {}
-    output['time'] = time
-    #ouput ['E'] =
-    #output['θ'] = temp
-    output['Sc'] = Sc
-    output['Gc'] = Gc
-    output['dScdt'] = dScdt
-    print('Model run: DONE!!!')
-    return  output
-
-def plot(output):
-    import matplotlib.pyplot as plt
-    # Plotting              
-    t = output['time']
-    data1 = output['Sc']
-    data2 = output['Gc']
-   
-    fig, ax1 = plt.subplots()
-   
-    color = 'tab:red'
-    ax1.set_xlabel('Days since start of culture')
-    ax1.set_ylabel('Stomach Content DW g', color = color)
-    ax1.plot(t, data1, 'o', color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-   
-    ax2=ax1.twinx()
-   
-    color = 'tab:blue'
-    ax2.set_ylabel('Gut Content DW g')
-    ax2.plot(t, data2, color=color)  
-    ax2.tick_params(axis='y', labelcolor=color)
-   
-    fig.tight_layout()
-           
-    return
-##########################################
-
-
-if __name__ == "__main__":
-    print('Executing my_module.py')
-    print('--------------------')
-   
-    days, dt, par, InitCond = load_defaults()
-    output = run(days, dt, par, InitCond)
-    plot(output)
-   
-    print('--------------------')
-    
 def load_defaults():
     print('Loading defaults...')
     # Framework
@@ -312,7 +12,9 @@ def load_defaults():
     par['ae'] = 0.4
     par['ux'] = 4.5**10-9
     par['jxm'] = 137
-    par['f'] = 0.5 # feeding functional response, can vary from 0-1 (dimensionless)
+    par['Xk'] = 600
+    par['X'] = 1400
+    par['f'] = (1+(par['Xk']/par['X'])**-1) # from manual
     par['ðm'] = 0.658 # shape coefficient 
     par['Eg'] = 1900
     
@@ -332,7 +34,7 @@ def run(days, dt, par, InitCond):
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
-    time = np.linspace(0,days,NoSTEPS+1) # Makes vector array of equally spaced numbers 
+    time = np.linspace(0,days,NoSTEPS-19) # Makes vector array of equally spaced numbers 
     
     # Create arrays of zeros
     # EXAMPLE: P = np.zeros((NoSTEPS), float)
@@ -353,13 +55,13 @@ def run(days, dt, par, InitCond):
         
     #Estimate processes
         
-        L = ((Ev[t]/par['Eg'])**(1/3))/par['ðm']
+        L = 0 # ((Ev[t]/par['Eg'])**(1/3))/par['ðm']
         
-        V = par['ðm']* L**3
+        #V = par['ðm']* (L**3)
         
-        jx = par['jxm'] * par['f'] * (V**(2/3))
+        jx = par['f'] * par['jxm'] ## Altered Eq from Manual 
         
-        Pa = par['ae'] * par['ux'] * jx
+        Pa = 0 #par['ae'] * par['ux'] * jx
         Pc = 0
         Pj = 0
         
@@ -409,6 +111,5 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
-    
     
    
