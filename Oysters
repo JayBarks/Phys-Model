@@ -1,3 +1,8 @@
+Created on Mon Nov  9 08:14:04 2020
+
+@author: James-
+"""
+import math 
 
 def load_defaults():
     print('Loading defaults...')
@@ -19,12 +24,16 @@ def load_defaults():
     par['Eg'] = 1900 # (J cm^−3) volume-specific costs for structural growth 
     par['Am'] = 25 # (J d^−1 cm^−2) maximum-surface-area specific assimilation rate
     par['Em'] = 2295 #(J cm^−3) maximum energy density 
+    par['Ta'] = 11000 # (K) arrhenius temperature
+    par['T1'] = 298 # (K) reference temperature  
+    
     
     # Initial conditions
     InitCond = {}
     InitCond['E'] = 6E-4
     InitCond['Ev'] = 2.5E-4
     InitCond['Er'] = 2.5E-4
+    InitCond['temp'] = 290 
     
     return  days, dt, par, InitCond
     
@@ -35,19 +44,21 @@ def run(days, dt, par, InitCond):
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
-    time = np.linspace(0,days,NoSTEPS-1) # Makes vector array of equally spaced numbers 
+    time = np.linspace(0,days,NoSTEPS+1) # Makes vector array of equally spaced numbers 
     
     # Create arrays of zeros
     # EXAMPLE: P = np.zeros((NoSTEPS), float)
     E =  np.zeros((NoSTEPS), float)
     Ev = np.zeros((NoSTEPS), float)
     Er = np.zeros((NoSTEPS), float)
-    
+   
     # Initializing with initial conditions
     # EXAMPLE: P[0] = InitCond['P']
     E[0] = InitCond['E']
     Ev[0] = InitCond['Ev']
     Er[0] = InitCond['Er']
+    
+    Temp = np.ones((NoSTEPS,),float) * InitCond['temp'] #Temperature 
     
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
@@ -67,16 +78,21 @@ def run(days, dt, par, InitCond):
         Pj = V * par['Pm'] * ((1-par['k'])/par['k'])
         
         #Estimate Time rate of change of all State Variables (dXdt) ----
-        #EXAMPLE: dPdt = 0
         dEdt = Pa - Pc # Eq. 3 
         dEvdt = par['k'] * Pc - par['Pm'] # Eq. 5
         dErdt = (1-par['k']) * Pc - Pj
         
+        
+        #With respect to Temperature 
+        dEdtt = dEdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp)) 
+        dEvdtt = dEvdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp))
+        dErdtt = dErdt * (math.exp((par['Ta']/par['T1']) - (par['Ta'])/Temp))
+        
+        
         # Update and step (time-stepping) ------------------------------
-        # EXAMPLE: P[t+1] = P[t] + (dPdt * dt)
-        E[t+1] = E[t] + (dEdt * dt)
-        Ev[t+1] = Ev[t] + (dEvdt * dt)       
-        Er[t+1] = Er[t] + (dErdt * dt)
+        E[t+1] = E[t] + (dEdtt * dt)
+        Ev[t+1] = Ev[t] + (dEvdtt * dt)       
+        Er[t+1] = Er[t] + (dErdtt * dt)
        
     # end of main model LOOP*******************************************************
     # *****************************************************************************
@@ -112,5 +128,6 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
+    
     
    
