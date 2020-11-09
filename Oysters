@@ -35,7 +35,7 @@ def load_defaults():
     InitCond['E'] = 6E-4
     InitCond['Ev'] = 2.5E-4
     InitCond['Er'] = 2.5E-4
-    InitCond['temp'] = 290 
+    InitCond['temp'] = 298 
     
     return  days, dt, par, InitCond
     
@@ -46,7 +46,7 @@ def run(days, dt, par, InitCond):
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
-    time = np.linspace(0,days,NoSTEPS+1) # Makes vector array of equally spaced numbers 
+    time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers 
     
     # Create arrays of zeros
     # EXAMPLE: P = np.zeros((NoSTEPS), float)
@@ -70,7 +70,7 @@ def run(days, dt, par, InitCond):
         
     #Estimate processes
         
-        L = ((Ev[t]/par['Eg'])**(1/3))/par['ðm']
+        L = 1 #((Ev[t]/par['Eg'])**(1/3))/par['ðm']
         
         V = par['ðm']* (L**3)
         
@@ -94,7 +94,7 @@ def run(days, dt, par, InitCond):
         
         # Update and step (time-stepping) ------------------------------
         E[t+1] = E[t] + (dEdt * dt) 
-        Ev[t+1] = Ev[t] + (dEvdt * dt)      
+        Ev[t+1] = ((Ev[t]/par['Eg'])**(1/3))/par['ðm'] #+ (dEvdt * dt)      
         Er[t+1] = Er[t] + (dErdt * dt)
        
     # end of main model LOOP*******************************************************
@@ -115,7 +115,7 @@ def plot(output):
     import matplotlib.pyplot as plt 
     # Plotting                      
     fig,(ax) = plt.subplots(1,1)
-    ax.plot(output['time'],output['L'],'b-')
+    ax.plot(output['time'],output['Ev'],'b-')
     ax.set_ylabel('Larval length (um)') 
     ax.set_xlabel('Age since fertilization (d)') 
     plt.show()                      
@@ -130,5 +130,6 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
+    
     
    
