@@ -70,7 +70,7 @@ def run(days, dt, par, InitCond):
         
     #Estimate processes
         
-        L = ((Ev/par['Eg'])**(1/3))/par['ðm']
+        L = ((Ev[t]/par['Eg'])**(1/3))/par['ðm']
         
         V = par['ðm']* (L**3)
         
