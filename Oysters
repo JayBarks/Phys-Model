@@ -10,7 +10,7 @@ def load_defaults():
     print('Loading defaults...')
     # Framework
     days = 20 # One year
-    dt   = 1 # units: days    
+    dt   = 2 # units: days    
     
     # Parameters (-- = dimensionless)
     par = {}
@@ -46,7 +46,7 @@ def run(days, dt, par, InitCond):
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
-    time = np.linspace(0,days,NoSTEPS) # Makes vector array of equally spaced numbers 
+    time = np.linspace(2,days,NoSTEPS) # Makes vector array of equally spaced numbers 
     
     # Create arrays of zeros
     # EXAMPLE: P = np.zeros((NoSTEPS), float)
@@ -130,6 +130,3 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
-    
-    
-   
