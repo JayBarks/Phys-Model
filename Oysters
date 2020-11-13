@@ -1,6 +1,6 @@
 @author: James-
 """ 
-
+################################################### Model Run examples (Works), Mass of conservation code is below this one. 
 def load_defaults():
     print('Loading defaults...')
     # Framework
@@ -132,3 +132,145 @@ if __name__ == "__main__":
 # third ed. Cambridge University Press, Cambridge, U.K.
     
 # Coded by: James Barclay
+
+
+
+
+########################################### Mass of conservation 
+
+@author: James-
+""" 
+
+def load_defaults():
+    print('Loading defaults...')
+    # Framework
+    days = 20 # One year
+    dt   = 1 # units: days    
+    
+    # Parameters (-- = dimensionless)
+    par = {}
+    par['k'] = 0.45 # (--) fraction of Pc spent on maintenance plus growth 
+    par['Pm'] = 24 # (Jd−1 cm^−3) volume-specific maintenance costs 
+    par['ae'] = 0.4 # (--) assimilation efficiency 
+    par['ux'] = 4.5**10-9 # (J μm^−3) energy content of food 
+    par['jxm'] = 137 # (μm^3 d^−1 μm^−2) maximum surface-area-specific ingestion rate 
+    par['Xk'] = 600 # (μm^3 μl^−1) half saturation coefficient 
+    par['X'] = 1400 # (μm^3 μl^−1) food density 
+    par['f'] = (1+(par['Xk']/par['X'])**-1) # (--) feeding functional response, can vary from 0-1, (Kooijman, 2000). 
+    par['ðm'] = 0.658 # (--)shape coefficient 
+    par['Eg'] = 1900 # (J cm^−3) volume-specific costs for structural growth 
+    par['Am'] = 25 # (J d^−1 cm^−2) maximum-surface-area specific assimilation rate
+    par['Em'] = 2295 #(J cm^−3) maximum energy density 
+
+    
+    
+    # Initial conditions
+    InitCond = {}
+    InitCond['E'] = 6E-4 # (J)energy content of an egg, E0
+    InitCond['Ev'] = 2.5E-4 # (J) energy content in the structural volume of a larva, V2
+    InitCond['Er'] = 2.5E-4 # (J)energy content in reserves, E2,
+    InitCond['temp'] = 305 # (K) temp adjusted for different plots with respect to larval length and age since fertilization
+    InitCond['Mc'] = 0
+    
+    return  days, dt, par, InitCond
+    
+def run(days, dt, par, InitCond):
+    print('Running model...')
+    # Import libraries
+    import numpy as np
+    
+    # Setup the framework 
+    NoSTEPS = int(days / dt) # Calculates the number of steps 
+    time = np.linspace(1,days,NoSTEPS) # Makes vector array of equally spaced numbers, starts at day 2 
+    
+    # Create arrays of zeros
+    E =  np.zeros((NoSTEPS), float)
+    Ev = np.zeros((NoSTEPS), float)
+    Er = np.zeros((NoSTEPS), float)
+    temp = np.zeros((NoSTEPS), float)
+    jx = np.zeros((NoSTEPS), float)
+    Pa = np.zeros((NoSTEPS), float)
+    Pc = np.zeros((NoSTEPS), float)
+    Pj = np.zeros((NoSTEPS), float)
+    Mc = np.zeros((NoSTEPS), float)
+    
+    
+    # Initializing with initial conditions
+    # EXAMPLE: P[0] = InitCond['P']
+    E[0] = InitCond['E']
+    Ev[0] = InitCond['Ev']
+    Er[0] = InitCond['Er']
+    temp[0] = InitCond['temp']
+    Mc[0] = InitCond['Mc']
+    
+    # *****************************************************************************
+    # MAIN MODEL LOOP *************************************************************
+    for t in range(0,NoSTEPS):
+    # Estimate limiting functions
+        
+    #Estimate processes
+        
+        L = ((Ev[t]/par['Eg'])**(1/3))/par['ðm'] # eq. 13 Larval length, this equation was inserted into state variable Ev for length.
+        
+        V = (par['ðm']*L)**3 # eq. 9 structural body volume 
+        
+        jx = par['f'] * par['jxm'] * (V**(2/3)) ## eq. 1, ingestion rate 
+        
+        Pa = par['ae'] * par['ux'] * jx # eq. 2, assimilation rate
+        Pc = (((E[t])/V)/(par['Eg']+ (par['k'] * (E[t])/V))) * (((par['Eg'] * par['Am'] * (V**(2/3)))/ par['Em']) + par['Pm'] * V) # eq. 4, catabolic power or utilisation rate 
+        Pj = V * par['Pm'] * ((1-par['k'])/par['k']) # eq. 8, maintenance costs for development, energy allocated for development
+        
+        
+        #Estimate Time rate of change of all State Variables (dXdt) ----
+        dEdt = Pa - Pc # Eq. 3 dynamics of energy in reserve
+        dEvdt = par['k'] * Pc - par['Pm'] # Eq. 5 volume specific costs for structural growth (This is not used as larval length subs in as the state variable as per eq. 13)
+        dErdt = (1-par['k']) * Pc - Pj # Eq. 7 energy allocated to development            
+        dMcdt = Er[t] + (dErdt * dt) + (((Ev[t]/par['Eg'])**(1/3))/par['ðm']) * InitCond['temp'] + E[t] + (dEdt * dt) 
+        
+        # Update and step (time-stepping) ------------------------------
+        #E[t+1] = E[t] + (dEdt * dt) 
+        #Ev[t+1] = (((Ev[t]/par['Eg'])**(1/3))/par['ðm']) * InitCond['temp']  ### This is actually Larval Length + (dEvdt * dt)     
+        #Er[t+1] = Er[t] + (dErdt * dt)
+        Mc[t+1] = Mc[t] + (dMcdt * dt)
+        
+    # end of main model LOOP*******************************************************
+    # *****************************************************************************
+
+    # Pack output into dictionary
+        output = {}
+        output['time'] = time
+        output['E'] = E
+        output['Ev'] = Ev
+        output['Er'] = Er
+        output['jx'] = jx
+        output['Pa'] = Pa
+        output['Pc'] = Pc
+        output['Mc'] = Mc
+        output['Pj'] = Pj
+        
+
+        print('Model run: DONE!!!')
+    return  output
+
+def plot(output):
+    import matplotlib.pyplot as plt 
+    # Plotting                      
+    fig,(ax) = plt.subplots(1,1)
+    ax.plot(output['time'],output['Mc'],'b-')
+    ax.set_ylabel('Sum of mass (J μm−3)')
+    ax.set_xlabel('Age since fertilization (d)') 
+    ax.legend(['Temperature at 32 °C'])
+    plt.show()                      
+    return
+
+if __name__ == "__main__":
+    print('Executing my_module.py')
+    print('--------------------')
+    
+    days, dt, par, InitCond = load_defaults()
+    output = run(days, dt, par, InitCond)
+    plot(output)
+    
+    print('--------------------')
+    
+
