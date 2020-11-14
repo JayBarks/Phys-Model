@@ -167,7 +167,7 @@ def load_defaults():
     InitCond['Ev'] = 2.5E-4 # (J) energy content in the structural volume of a larva, V2
     InitCond['Er'] = 2.5E-4 # (J)energy content in reserves, E2,
     InitCond['temp'] = 305 # (K) temp adjusted for different plots with respect to larval length and age since fertilization
-    InitCond['Mc'] = 0
+    InitCond['Mc'] = 0 # Total Mass
     
     return  days, dt, par, InitCond
     
@@ -222,7 +222,7 @@ def run(days, dt, par, InitCond):
         E[t+1] = E[t] + (dEdt * dt) 
         Ev[t+1] = (((Ev[t]/par['Eg'])**(1/3))/par['ðm']) #* InitCond['temp']  ### This is actually Larval Length + (dEvdt * dt)     
         Er[t+1] = Er[t] + (dErdt * dt)
-        Mc[t+1] = Er[t+1] + Ev[t+1] + E[t+1]
+        Mc[t+1] = Er[t+1] + Ev[t+1] + E[t+1] #  Total mass over time adding energy. 
        
     # end of main model LOOP*******************************************************
     # *****************************************************************************
