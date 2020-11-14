@@ -1,6 +1,6 @@
 @author: James-
 """ 
-################################################### Model Run examples (Works), Mass of conservation code is below this one. 
+################################################### 
 def load_defaults():
     print('Loading defaults...')
     # Framework
@@ -138,9 +138,6 @@ if __name__ == "__main__":
 
 ########################################### Mass of conservation 
 
-@author: James-
-""" 
-
 def load_defaults():
     print('Loading defaults...')
     # Framework
@@ -181,19 +178,14 @@ def run(days, dt, par, InitCond):
     
     # Setup the framework 
     NoSTEPS = int(days / dt) # Calculates the number of steps 
-    time = np.linspace(1,days,NoSTEPS) # Makes vector array of equally spaced numbers, starts at day 2 
+    time = np.linspace(2,days,NoSTEPS) # Makes vector array of equally spaced numbers, starts at day 2 
     
     # Create arrays of zeros
     E =  np.zeros((NoSTEPS), float)
     Ev = np.zeros((NoSTEPS), float)
     Er = np.zeros((NoSTEPS), float)
     temp = np.zeros((NoSTEPS), float)
-    jx = np.zeros((NoSTEPS), float)
-    Pa = np.zeros((NoSTEPS), float)
-    Pc = np.zeros((NoSTEPS), float)
-    Pj = np.zeros((NoSTEPS), float)
     Mc = np.zeros((NoSTEPS), float)
-    
     
     # Initializing with initial conditions
     # EXAMPLE: P[0] = InitCond['P']
@@ -205,7 +197,7 @@ def run(days, dt, par, InitCond):
     
     # *****************************************************************************
     # MAIN MODEL LOOP *************************************************************
-    for t in range(0,NoSTEPS):
+    for t in range(0,NoSTEPS-1):
     # Estimate limiting functions
         
     #Estimate processes
@@ -220,19 +212,18 @@ def run(days, dt, par, InitCond):
         Pc = (((E[t])/V)/(par['Eg']+ (par['k'] * (E[t])/V))) * (((par['Eg'] * par['Am'] * (V**(2/3)))/ par['Em']) + par['Pm'] * V) # eq. 4, catabolic power or utilisation rate 
         Pj = V * par['Pm'] * ((1-par['k'])/par['k']) # eq. 8, maintenance costs for development, energy allocated for development
         
-        
         #Estimate Time rate of change of all State Variables (dXdt) ----
         dEdt = Pa - Pc # Eq. 3 dynamics of energy in reserve
         dEvdt = par['k'] * Pc - par['Pm'] # Eq. 5 volume specific costs for structural growth (This is not used as larval length subs in as the state variable as per eq. 13)
-        dErdt = (1-par['k']) * Pc - Pj # Eq. 7 energy allocated to development            
-        dMcdt = Er[t] + (dErdt * dt) + (((Ev[t]/par['Eg'])**(1/3))/par['ðm']) * InitCond['temp'] + E[t] + (dEdt * dt) 
-        
+        dErdt = (1-par['k']) * Pc - Pj # Eq. 7 energy allocated to development
+    
+  
         # Update and step (time-stepping) ------------------------------
-        #E[t+1] = E[t] + (dEdt * dt) 
-        #Ev[t+1] = (((Ev[t]/par['Eg'])**(1/3))/par['ðm']) * InitCond['temp']  ### This is actually Larval Length + (dEvdt * dt)     
-        #Er[t+1] = Er[t] + (dErdt * dt)
-        Mc[t+1] = Mc[t] + (dMcdt * dt)
-        
+        E[t+1] = E[t] + (dEdt * dt) 
+        Ev[t+1] = (((Ev[t]/par['Eg'])**(1/3))/par['ðm']) #* InitCond['temp']  ### This is actually Larval Length + (dEvdt * dt)     
+        Er[t+1] = Er[t] + (dErdt * dt)
+        Mc[t+1] = Er[t+1] + Ev[t+1] + E[t+1]
+       
     # end of main model LOOP*******************************************************
     # *****************************************************************************
 
@@ -242,13 +233,7 @@ def run(days, dt, par, InitCond):
         output['E'] = E
         output['Ev'] = Ev
         output['Er'] = Er
-        output['jx'] = jx
-        output['Pa'] = Pa
-        output['Pc'] = Pc
         output['Mc'] = Mc
-        output['Pj'] = Pj
-        
-
         print('Model run: DONE!!!')
     return  output
 
@@ -257,9 +242,9 @@ def plot(output):
     # Plotting                      
     fig,(ax) = plt.subplots(1,1)
     ax.plot(output['time'],output['Mc'],'b-')
-    ax.set_ylabel('Sum of mass (J μm−3)')
-    ax.set_xlabel('Age since fertilization (d)') 
-    ax.legend(['Temperature at 32 °C'])
+    ax.set_ylabel('Sum of mass (J μm−3)') 
+    ax.set_xlabel('Time (days)') 
+    #ax.legend(['Temperature at 32 °C'])
     plt.show()                      
     return
 
@@ -272,5 +257,7 @@ if __name__ == "__main__":
     plot(output)
     
     print('--------------------')
+    
+
     
 
